@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// In production (Vercel), API is served from the same origin under /api
+// In development, point to the local FastAPI server
+const BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? '' : 'http://localhost:8000')
 
 function authHeader(token) {
   return token ? { Authorization: `Bearer ${token}` } : {}

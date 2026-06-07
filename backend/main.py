@@ -1,8 +1,16 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from auth import router as auth_router
-from profiles import router as profiles_router
-from applications import router as applications_router
+
+# When deployed on Vercel, routers live in backend package
+try:
+    from backend.auth import router as auth_router
+    from backend.profiles import router as profiles_router
+    from backend.applications import router as applications_router
+except ImportError:
+    from auth import router as auth_router
+    from profiles import router as profiles_router
+    from applications import router as applications_router
 
 app = FastAPI(
     title="RentReady API",
@@ -10,13 +18,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
+FRONTEND_URL = os.getenv("FRONTEND_URL", "")
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://*.vercel.app",
+]
+if FRONTEND_URL:
+    origins.append(FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://*.vercel.app",
-    ],
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

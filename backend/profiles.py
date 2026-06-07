@@ -3,7 +3,10 @@ import httpx
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
-from database import get_admin_client
+try:
+    from backend.database import get_admin_client
+except ImportError:
+    from database import get_admin_client
 from dotenv import load_dotenv
 
 load_dotenv()
