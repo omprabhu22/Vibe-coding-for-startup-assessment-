@@ -41,8 +41,15 @@ async def signup(req: SignUpRequest):
         )
 
     if res.status_code not in (200, 201):
-        detail = res.json().get("msg", res.json().get("message", "Signup failed"))
-        raise HTTPException(res.status_code, detail)
+        try:
+            err = res.json()
+            raw = err.get("msg", err.get("message", err.get("error_description", "Signup failed")))
+        except Exception:
+            raw = "Signup failed"
+        # Make rate-limit error human-friendly
+        if "rate limit" in raw.lower() or res.status_code == 429:
+            raw = "Too many sign-up attempts. Please wait a minute and try again."
+        raise HTTPException(res.status_code, raw)
 
     data = res.json()
     return {
