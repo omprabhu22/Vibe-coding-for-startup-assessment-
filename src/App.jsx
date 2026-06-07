@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { api } from './api'
 
+// ─── SESSION HELPERS (localStorage) ──────────────────────────
+const SESSION_KEY = 'rentready_session'
+function saveSession(user, token) {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ user, token, savedAt: Date.now() })) } catch (_) {}
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const s = JSON.parse(raw)
+    // Expire after 7 days
+    if (Date.now() - s.savedAt > 7 * 24 * 60 * 60 * 1000) { localStorage.removeItem(SESSION_KEY); return null }
+    return s
+  } catch (_) { return null }
+}
+function clearSession() { try { localStorage.removeItem(SESSION_KEY) } catch (_) {} }
+
+// ─── PASSWORD HASHING (SHA-256 via Web Crypto API) ────────────
+async function hashPassword(password) {
+  const enc = new TextEncoder()
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(password))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('')
+}
+
 // ─── ICONS ────────────────────────────────────────────────────
 const Icons = {
   Home: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
@@ -37,9 +61,12 @@ function LoginPage({ onLogin }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
+      // Hash password client-side with SHA-256 before transmission
+      const hashedPw = await hashPassword(password)
+
       const data = mode === 'login'
-        ? await api.login(email, password)
-        : await api.signup(email, password, name)
+        ? await api.login(email, hashedPw)
+        : await api.signup(email, hashedPw, name)
 
       // Supabase requires email confirmation — no token returned yet
       if (!data.access_token) {
@@ -188,7 +215,7 @@ function LoginPage({ onLogin }) {
 }
 
 // ─── PROFILE SETUP PAGE ───────────────────────────────────────
-function ProfilePage({ user, token, savedProfile, onComplete }) {
+function ProfilePage({ user, token, savedProfile, onComplete, onBack }) {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [data, setData] = useState({
@@ -381,8 +408,10 @@ function ProfilePage({ user, token, savedProfile, onComplete }) {
         )}
 
         <div className="btn-row" style={{ display:'flex', gap:12 }}>
-          <button className="btn-secondary" onClick={() => setStep(s => Math.max(0, s-1))} disabled={step === 0} style={{ flex:1 }}>
-            Back
+          <button className="btn-secondary"
+            onClick={() => step === 0 ? onBack?.() : setStep(s => s - 1)}
+            style={{ flex:1 }}>
+            ← {step === 0 ? 'Dashboard' : 'Back'}
           </button>
           <button className="btn-primary" onClick={handleNext} disabled={saving} style={{ flex:2 }}>
             {saving ? <Icons.Loader /> : step === steps.length-1 ? 'Save & Continue' : 'Next Step'}
@@ -444,7 +473,7 @@ function UploadCard({ doc, uploaded, progress, onFileChosen, onRemove }) {
 }
 
 // ─── DOCUMENTS PAGE ───────────────────────────────────────────
-function DocumentsPage({ onComplete }) {
+function DocumentsPage({ onComplete, onBack }) {
   const docs = [
     { id:'passport',   icon:'🛂', label:'Passport / Photo ID',   desc:'Clear photo of your passport or driver licence', required:true },
     { id:'payslips',   icon:'💰', label:'Payslips',               desc:'Last 3 months of payslips',                      required:true },
@@ -502,16 +531,19 @@ function DocumentsPage({ onComplete }) {
           <p><strong>Secure & Encrypted:</strong> Documents are protected with end-to-end encryption. Agents only see files you explicitly approve for each application.</p>
         </div>
 
-        <button className="btn-primary" style={{ width:'100%' }} onClick={onComplete} disabled={!canSubmit}>
-          {canSubmit ? 'Review & Submit Application' : `Upload ${required.length - doneCount} more required document${required.length - doneCount > 1 ? 's' : ''}`}
-        </button>
+        <div className="btn-row" style={{ display:'flex', gap:12 }}>
+          <button className="btn-secondary" onClick={onBack} style={{ flex:1 }}>← Back</button>
+          <button className="btn-primary" style={{ flex:2 }} onClick={onComplete} disabled={!canSubmit}>
+            {canSubmit ? 'Review & Submit' : `Upload ${required.length - doneCount} more required`}
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
 // ─── REVIEW PAGE ──────────────────────────────────────────────
-function ReviewPage({ user, profileData, token, onSubmit }) {
+function ReviewPage({ user, profileData, token, onSubmit, onBack }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -595,9 +627,12 @@ function ReviewPage({ user, profileData, token, onSubmit }) {
           </div>
         )}
 
-        <button className="btn-primary" style={{ width:'100%', marginBottom:10 }} onClick={doSubmit} disabled={submitting}>
-          {submitting ? <Icons.Loader /> : 'Submit Application'}
-        </button>
+        <div className="btn-row" style={{ display:'flex', gap:12, marginBottom:10 }}>
+          <button className="btn-secondary" onClick={onBack} style={{ flex:1 }}>← Back</button>
+          <button className="btn-primary" style={{ flex:2 }} onClick={doSubmit} disabled={submitting}>
+            {submitting ? <Icons.Loader /> : 'Submit Application'}
+          </button>
+        </div>
         <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', textAlign:'center' }}>
           By submitting you agree to our Terms of Service and Privacy Policy
         </p>
@@ -876,30 +911,63 @@ function SuccessPage({ user, onGoHome, onNewApplication }) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────
 export default function App() {
-  const [phase, setPhase] = useState('login')
+  const [phase, setPhase] = useState('loading') // start in loading while we check session
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [profileData, setProfileData] = useState(null)
   const [savedProfile, setSavedProfile] = useState(null)
 
+  // ── Restore session from localStorage on first load ──────────
+  useEffect(() => {
+    const restoreSession = async () => {
+      const s = loadSession()
+      if (s?.token && s?.user) {
+        setUser(s.user); setToken(s.token)
+        // Reload saved profile
+        try { const prof = await api.getProfile(s.token); setSavedProfile(prof) } catch (_) {}
+        setPhase('dashboard')
+      } else {
+        setPhase('login')
+      }
+    }
+    restoreSession()
+  }, [])
+
   const handleLogin = async (u, t) => {
     setUser(u); setToken(t)
-    // Try to load existing profile to pre-fill form
-    try {
-      const prof = await api.getProfile(t)
-      setSavedProfile(prof)
-    } catch (_) {
-      setSavedProfile(null)
-    }
+    saveSession(u, t) // persist to localStorage
+    try { const prof = await api.getProfile(t); setSavedProfile(prof) } catch (_) { setSavedProfile(null) }
     setPhase('dashboard')
   }
 
   const handleProfileDone = (data) => { setProfileData(data); setPhase('documents') }
   const handleDocsDone = () => { setPhase('review') }
-  const handleSubmit = () => { setPhase('success') }
-  const handleLogout = () => { setUser(null); setToken(null); setProfileData(null); setSavedProfile(null); setPhase('login') }
+  const handleSubmit = async () => {
+    // Refresh saved profile after successful submit
+    try { const prof = await api.getProfile(token); setSavedProfile(prof) } catch (_) {}
+    setPhase('success')
+  }
+  const handleLogout = () => {
+    clearSession()
+    setUser(null); setToken(null); setProfileData(null); setSavedProfile(null)
+    setPhase('login')
+  }
   const handleNewApplication = () => { setPhase('profile') }
   const handleGoHome = () => { setPhase('dashboard') }
+
+  // ── Loading splash while session restores ───────────────────
+  if (phase === 'loading') return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--navy)' }}>
+      <div className="bg-mesh" />
+      <div style={{ textAlign:'center', position:'relative', zIndex:1 }}>
+        <div style={{ width:48, height:48, borderRadius:12, background:'linear-gradient(135deg,var(--teal),var(--teal2))', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+          <Icons.Home />
+        </div>
+        <div style={{ fontWeight:700, fontSize:18, marginBottom:8 }}>RentReady</div>
+        <Icons.Loader />
+      </div>
+    </div>
+  )
 
   if (phase === 'login') return <LoginPage onLogin={handleLogin} />
 
@@ -910,21 +978,21 @@ export default function App() {
   if (phase === 'profile') return (
     <>
       <TopNav user={user} onLogout={handleLogout} step={0} totalSteps={3} />
-      <ProfilePage user={user} token={token} savedProfile={savedProfile} onComplete={handleProfileDone} />
+      <ProfilePage user={user} token={token} savedProfile={savedProfile} onComplete={handleProfileDone} onBack={handleGoHome} />
     </>
   )
 
   if (phase === 'documents') return (
     <>
       <TopNav user={user} onLogout={handleLogout} step={1} totalSteps={3} />
-      <DocumentsPage onComplete={handleDocsDone} />
+      <DocumentsPage onComplete={handleDocsDone} onBack={() => setPhase('profile')} />
     </>
   )
 
   if (phase === 'review') return (
     <>
       <TopNav user={user} onLogout={handleLogout} step={2} totalSteps={3} />
-      <ReviewPage user={user} profileData={profileData} token={token} onSubmit={handleSubmit} />
+      <ReviewPage user={user} profileData={profileData} token={token} onSubmit={handleSubmit} onBack={() => setPhase('documents')} />
     </>
   )
 
