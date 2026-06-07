@@ -598,8 +598,52 @@ function ReviewPage({ user, profileData, token, onSubmit }) {
   )
 }
 
+// ─── TOP NAV BAR ─────────────────────────────────────────────
+function TopNav({ user, onLogout, step, totalSteps }) {
+  const stepLabels = ['Profile Setup', 'Documents', 'Review']
+  return (
+    <div style={{
+      position:'sticky', top:0, zIndex:50,
+      background:'rgba(6,9,26,0.85)', backdropFilter:'blur(16px)',
+      borderBottom:'1px solid rgba(255,255,255,0.08)',
+      padding:'0 24px', height:56,
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+    }}>
+      {/* Logo */}
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ width:28, height:28, borderRadius:6, background:'linear-gradient(135deg,var(--teal),var(--teal2))', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icons.Home />
+        </div>
+        <span style={{ fontWeight:700, fontSize:15 }}>RentReady</span>
+      </div>
+
+      {/* Step label */}
+      {step !== undefined && (
+        <div style={{ fontSize:12, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>
+          Step {step + 1} of {totalSteps} — {stepLabels[step]}
+        </div>
+      )}
+
+      {/* User + logout */}
+      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+        <span style={{ fontSize:12, color:'rgba(255,255,255,0.5)', maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {user?.email}
+        </span>
+        <button
+          onClick={onLogout}
+          style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:600, padding:'6px 14px', cursor:'pointer', transition:'all .2s' }}
+          onMouseOver={e => e.target.style.background='rgba(255,255,255,0.12)'}
+          onMouseOut={e => e.target.style.background='rgba(255,255,255,0.07)'}
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── SUCCESS PAGE ─────────────────────────────────────────────
-function SuccessPage({ user }) {
+function SuccessPage({ user, onGoHome, onNewApplication }) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
@@ -608,39 +652,74 @@ function SuccessPage({ user }) {
   }, [])
 
   return (
-    <div className="page" style={{ alignItems:'center', justifyContent:'center' }}>
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', position:'relative' }}>
       <div className="bg-mesh" />
-      <div className="scale-in" style={{ position:'relative', zIndex:1, textAlign:'center', maxWidth:480, width:'100%' }}>
-        <div style={{ marginBottom:24 }}>
-          <div className="success-ring">
-            <Icons.Check />
+
+      {/* Nav */}
+      <div style={{
+        position:'sticky', top:0, zIndex:50,
+        background:'rgba(6,9,26,0.85)', backdropFilter:'blur(16px)',
+        borderBottom:'1px solid rgba(255,255,255,0.08)',
+        padding:'0 24px', height:56,
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+      }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:28, height:28, borderRadius:6, background:'linear-gradient(135deg,var(--teal),var(--teal2))', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Icons.Home />
           </div>
+          <span style={{ fontWeight:700, fontSize:15 }}>RentReady</span>
         </div>
-        <h1 style={{ fontSize:32, fontWeight:800, marginBottom:10, fontFamily:'Sora,sans-serif' }}>
-          Application Submitted!
-        </h1>
-        <p style={{ fontSize:15, color:'rgba(255,255,255,0.65)', marginBottom:8, lineHeight:1.6 }}>
-          Your rental profile has been created and verified.
-        </p>
-        <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginBottom:20 }}>
-          {Math.round(count)}% profile strength
-        </p>
-        <div className="prog-bar" style={{ marginBottom:28 }}>
-          <div className="prog-fill" style={{ width:`${count}%`, background:'linear-gradient(90deg, var(--success), #4ade80)' }} />
-        </div>
+        <button
+          onClick={onGoHome}
+          style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:600, padding:'6px 14px', cursor:'pointer' }}
+        >
+          ← Back to Home
+        </button>
+      </div>
 
-        <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:28 }}>
-          {['Identity verified', 'Employment confirmed', 'Documents secured', 'Ready for applications'].map(item => (
-            <div key={item} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', background:'rgba(34,197,94,0.08)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)' }}>
-              <div style={{ color:'var(--success)', flexShrink:0 }}><Icons.Check /></div>
-              <span style={{ fontSize:13, fontWeight:500 }}>{item}</span>
+      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+        <div className="scale-in" style={{ position:'relative', zIndex:1, textAlign:'center', maxWidth:480, width:'100%' }}>
+          <div style={{ marginBottom:24 }}>
+            <div className="success-ring">
+              <Icons.Check />
             </div>
-          ))}
-        </div>
+          </div>
+          <h1 style={{ fontSize:32, fontWeight:800, marginBottom:10, fontFamily:'Sora,sans-serif' }}>
+            Application Submitted!
+          </h1>
+          <p style={{ fontSize:15, color:'rgba(255,255,255,0.65)', marginBottom:8, lineHeight:1.6 }}>
+            Your rental profile has been created and saved to our database.
+          </p>
+          <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginBottom:20 }}>
+            {Math.round(count)}% profile strength
+          </p>
+          <div className="prog-bar" style={{ marginBottom:28 }}>
+            <div className="prog-fill" style={{ width:`${count}%`, background:'linear-gradient(90deg, var(--success), #4ade80)' }} />
+          </div>
 
-        <p style={{ fontSize:12, color:'rgba(255,255,255,0.35)' }}>
-          Your data is secure and only shared with your explicit consent
-        </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:32 }}>
+            {['Identity verified', 'Employment confirmed', 'Documents secured', 'Ready for applications'].map(item => (
+              <div key={item} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', background:'rgba(34,197,94,0.08)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)' }}>
+                <div style={{ color:'var(--success)', flexShrink:0 }}><Icons.Check /></div>
+                <span style={{ fontSize:13, fontWeight:500 }}>{item}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Navigation buttons */}
+          <div style={{ display:'flex', gap:12, flexDirection:'column' }}>
+            <button className="btn-primary" style={{ width:'100%' }} onClick={onNewApplication}>
+              Submit Another Application
+            </button>
+            <button className="btn-secondary" style={{ width:'100%' }} onClick={onGoHome}>
+              ← Back to Home / Sign In
+            </button>
+          </div>
+
+          <p style={{ fontSize:11, color:'rgba(255,255,255,0.3)', marginTop:20 }}>
+            Your data is secure and only shared with your explicit consent
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -657,11 +736,35 @@ export default function App() {
   const handleProfileDone = (data) => { setProfileData(data); setPhase('documents') }
   const handleDocsDone = () => { setPhase('review') }
   const handleSubmit = () => { setPhase('success') }
+  const handleLogout = () => { setUser(null); setToken(null); setProfileData(null); setPhase('login') }
+  const handleNewApplication = () => { setProfileData(null); setPhase('profile') }
 
-  if (phase === 'login')     return <LoginPage onLogin={handleLogin} />
-  if (phase === 'profile')   return <ProfilePage user={user} token={token} onComplete={handleProfileDone} />
-  if (phase === 'documents') return <DocumentsPage onComplete={handleDocsDone} />
-  if (phase === 'review')    return <ReviewPage user={user} profileData={profileData} token={token} onSubmit={handleSubmit} />
-  if (phase === 'success')   return <SuccessPage user={user} />
+  if (phase === 'login') return <LoginPage onLogin={handleLogin} />
+
+  if (phase === 'profile') return (
+    <>
+      <TopNav user={user} onLogout={handleLogout} step={0} totalSteps={3} />
+      <ProfilePage user={user} token={token} onComplete={handleProfileDone} />
+    </>
+  )
+
+  if (phase === 'documents') return (
+    <>
+      <TopNav user={user} onLogout={handleLogout} step={1} totalSteps={3} />
+      <DocumentsPage onComplete={handleDocsDone} />
+    </>
+  )
+
+  if (phase === 'review') return (
+    <>
+      <TopNav user={user} onLogout={handleLogout} step={2} totalSteps={3} />
+      <ReviewPage user={user} profileData={profileData} token={token} onSubmit={handleSubmit} />
+    </>
+  )
+
+  if (phase === 'success') return (
+    <SuccessPage user={user} onGoHome={handleLogout} onNewApplication={handleNewApplication} />
+  )
+
   return null
 }
