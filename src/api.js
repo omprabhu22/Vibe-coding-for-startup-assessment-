@@ -25,8 +25,14 @@ export const api = {
   login: (email, password) =>
     request('POST', '/auth/login', { email, password }),
 
+  getProfile: (token) =>
+    request('GET', '/profiles/me', null, token),
+
   saveProfile: (profileData, token) =>
     request('POST', '/profiles/', profileData, token),
+
+  getApplications: (token) =>
+    request('GET', '/applications/', null, token),
 
   submitApplication: (appData, token) =>
     request('POST', '/applications/', appData, token),

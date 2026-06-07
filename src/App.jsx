@@ -188,12 +188,20 @@ function LoginPage({ onLogin }) {
 }
 
 // ─── PROFILE SETUP PAGE ───────────────────────────────────────
-function ProfilePage({ user, token, onComplete }) {
+function ProfilePage({ user, token, savedProfile, onComplete }) {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [data, setData] = useState({
-    fullName: user?.name || '', age: '', occupation: '', employmentStatus: '',
-    visaStatus: '', weeklyIncome: '', rentalBudget: '', suburb: '', phone: '', bio: '',
+    fullName: savedProfile?.full_name || user?.name || '',
+    age: savedProfile?.age ? String(savedProfile.age) : '',
+    occupation: savedProfile?.occupation || '',
+    employmentStatus: savedProfile?.employment_status || '',
+    visaStatus: savedProfile?.visa_status || '',
+    weeklyIncome: savedProfile?.weekly_income ? String(savedProfile.weekly_income) : '',
+    rentalBudget: savedProfile?.rental_budget ? String(savedProfile.rental_budget) : '',
+    suburb: savedProfile?.suburb || '',
+    phone: savedProfile?.phone || '',
+    bio: savedProfile?.bio || '',
   })
   const [errors, setErrors] = useState({})
 
@@ -598,6 +606,147 @@ function ReviewPage({ user, profileData, token, onSubmit }) {
   )
 }
 
+// ─── DASHBOARD PAGE ──────────────────────────────────────────
+function DashboardPage({ user, token, onNewApplication, onLogout }) {
+  const [profile, setProfile] = useState(null)
+  const [applications, setApplications] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [prof, apps] = await Promise.allSettled([
+          api.getProfile(token),
+          api.getApplications(token),
+        ])
+        if (prof.status === 'fulfilled') setProfile(prof.value)
+        if (apps.status === 'fulfilled') setApplications(apps.value)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [token])
+
+  const fmt = (val, prefix = '') => val ? `${prefix}${val}` : '—'
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' }) : '—'
+
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', position:'relative' }}>
+      <div className="bg-mesh" />
+
+      {/* Nav */}
+      <div style={{ position:'sticky', top:0, zIndex:50, background:'rgba(6,9,26,0.9)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,0.08)', padding:'0 24px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:28, height:28, borderRadius:6, background:'linear-gradient(135deg,var(--teal),var(--teal2))', display:'flex', alignItems:'center', justifyContent:'center' }}><Icons.Home /></div>
+          <span style={{ fontWeight:700, fontSize:15 }}>RentReady</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:12, color:'rgba(255,255,255,0.45)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</span>
+          <button onClick={onLogout} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:600, padding:'6px 14px', cursor:'pointer' }}>
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      <div style={{ flex:1, maxWidth:720, margin:'0 auto', width:'100%', padding:'32px 20px', position:'relative', zIndex:1 }}>
+        {/* Header */}
+        <div className="fade-up" style={{ marginBottom:28 }}>
+          <h1 style={{ fontSize:26, fontWeight:800, marginBottom:4 }}>
+            Welcome back, {profile?.full_name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there'} 👋
+          </h1>
+          <p style={{ color:'rgba(255,255,255,0.5)', fontSize:14 }}>Here's your rental profile and application history.</p>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign:'center', padding:60, color:'rgba(255,255,255,0.4)' }}>
+            <Icons.Loader /><p style={{ marginTop:12, fontSize:14 }}>Loading your profile...</p>
+          </div>
+        ) : (
+          <>
+            {/* Profile summary */}
+            <div className="glass" style={{ padding:24, marginBottom:20 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <h2 style={{ fontSize:16, fontWeight:700, display:'flex', alignItems:'center', gap:8 }}><Icons.User /> Your Profile</h2>
+                <button className="btn-secondary" style={{ fontSize:12, padding:'6px 14px' }} onClick={onNewApplication}>
+                  Update Profile
+                </button>
+              </div>
+              {profile ? (
+                <div className="info-grid">
+                  {[
+                    ['Full Name', profile.full_name],
+                    ['Phone', profile.phone],
+                    ['Age', profile.age],
+                    ['Occupation', profile.occupation],
+                    ['Employment', profile.employment_status],
+                    ['Weekly Income', profile.weekly_income ? `$${profile.weekly_income}/wk` : null],
+                    ['Visa Status', profile.visa_status],
+                    ['Rental Budget', profile.rental_budget ? `$${profile.rental_budget}/wk` : null],
+                    ['Preferred Suburbs', profile.suburb],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'.5px', fontWeight:600, marginBottom:3 }}>{label}</div>
+                      <div style={{ fontSize:14, color: value ? 'white' : 'rgba(255,255,255,0.25)' }}>{value || '—'}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign:'center', padding:'20px 0', color:'rgba(255,255,255,0.4)', fontSize:14 }}>
+                  No profile saved yet.
+                  <button className="btn-primary" style={{ display:'block', margin:'16px auto 0', padding:'10px 24px' }} onClick={onNewApplication}>
+                    Create Profile
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Applications history */}
+            <div className="glass" style={{ padding:24, marginBottom:24 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <h2 style={{ fontSize:16, fontWeight:700, display:'flex', alignItems:'center', gap:8 }}><Icons.FileText /> Application History</h2>
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.07)', padding:'4px 10px', borderRadius:20 }}>
+                  {applications.length} total
+                </span>
+              </div>
+
+              {applications.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'24px 0', color:'rgba(255,255,255,0.35)', fontSize:14 }}>
+                  No applications submitted yet.
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {applications.map((app, i) => (
+                    <div key={app.id || i} style={{ padding:'14px 16px', background:'rgba(255,255,255,0.04)', borderRadius:10, border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', gap:14 }}>
+                      <div style={{ width:36, height:36, borderRadius:8, background:'rgba(0,201,177,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>📋</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:14, marginBottom:2 }}>Application #{applications.length - i}</div>
+                        <div style={{ fontSize:12, color:'rgba(255,255,255,0.45)' }}>
+                          {fmtDate(app.submitted_at)} &nbsp;·&nbsp; Budget: {fmt(app.rental_budget, '$')}{app.rental_budget ? '/wk' : ''} &nbsp;·&nbsp; {app.suburb || 'No suburb'}
+                        </div>
+                      </div>
+                      <div style={{ flexShrink:0 }}>
+                        <span style={{ fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'rgba(34,197,94,0.15)', color:'#22C55E', border:'1px solid rgba(34,197,94,0.25)', textTransform:'uppercase', letterSpacing:'.5px' }}>
+                          {app.status || 'Submitted'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* New application CTA */}
+            <button className="btn-primary" style={{ width:'100%' }} onClick={onNewApplication}>
+              + Submit New Application
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── TOP NAV BAR ─────────────────────────────────────────────
 function TopNav({ user, onLogout, step, totalSteps }) {
   const stepLabels = ['Profile Setup', 'Documents', 'Review']
@@ -731,20 +880,37 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [profileData, setProfileData] = useState(null)
+  const [savedProfile, setSavedProfile] = useState(null)
 
-  const handleLogin = (u, t) => { setUser(u); setToken(t); setPhase('profile') }
+  const handleLogin = async (u, t) => {
+    setUser(u); setToken(t)
+    // Try to load existing profile to pre-fill form
+    try {
+      const prof = await api.getProfile(t)
+      setSavedProfile(prof)
+    } catch (_) {
+      setSavedProfile(null)
+    }
+    setPhase('dashboard')
+  }
+
   const handleProfileDone = (data) => { setProfileData(data); setPhase('documents') }
   const handleDocsDone = () => { setPhase('review') }
   const handleSubmit = () => { setPhase('success') }
-  const handleLogout = () => { setUser(null); setToken(null); setProfileData(null); setPhase('login') }
-  const handleNewApplication = () => { setProfileData(null); setPhase('profile') }
+  const handleLogout = () => { setUser(null); setToken(null); setProfileData(null); setSavedProfile(null); setPhase('login') }
+  const handleNewApplication = () => { setPhase('profile') }
+  const handleGoHome = () => { setPhase('dashboard') }
 
   if (phase === 'login') return <LoginPage onLogin={handleLogin} />
+
+  if (phase === 'dashboard') return (
+    <DashboardPage user={user} token={token} onNewApplication={handleNewApplication} onLogout={handleLogout} />
+  )
 
   if (phase === 'profile') return (
     <>
       <TopNav user={user} onLogout={handleLogout} step={0} totalSteps={3} />
-      <ProfilePage user={user} token={token} onComplete={handleProfileDone} />
+      <ProfilePage user={user} token={token} savedProfile={savedProfile} onComplete={handleProfileDone} />
     </>
   )
 
@@ -763,7 +929,7 @@ export default function App() {
   )
 
   if (phase === 'success') return (
-    <SuccessPage user={user} onGoHome={handleLogout} onNewApplication={handleNewApplication} />
+    <SuccessPage user={user} onGoHome={handleGoHome} onNewApplication={handleNewApplication} />
   )
 
   return null
