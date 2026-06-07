@@ -1,4 +1,5 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
   --navy:#06091A;
   --navy2:#0D1230;
@@ -18,18 +19,32 @@
   --danger:#EF4444;
   --blue-mid:#1E3A8A;
 }
-html,body{height:100%;background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;line-height:1.5}
+
+html,body{
+  height:100%;
+  background:var(--navy);
+  color:var(--white);
+  font-family:'DM Sans',sans-serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
 #root{min-height:100vh}
+
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--navy2)}
 ::-webkit-scrollbar-thumb{background:var(--teal);border-radius:3px}
-input,select,textarea{outline:none;font-family:'DM Sans',sans-serif}
+
+input,select,textarea{
+  outline:none;
+  font-family:'DM Sans',sans-serif;
+}
 button{cursor:pointer;font-family:'DM Sans',sans-serif}
 
+/* ── Animations ─────────────────────────────────────── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes popIn{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
@@ -41,23 +56,7 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif}
 .scale-in{animation:scaleIn .4s ease both}
 .float{animation:float 3s ease-in-out infinite}
 
-.glass{
-  background:rgba(255,255,255,0.05);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:16px;
-}
-.glass-strong{
-  background:rgba(13,18,48,0.8);
-  backdrop-filter:blur(24px);
-  -webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(255,255,255,0.12);
-}
-.teal-glow{box-shadow:0 0 40px rgba(0,201,177,0.2)}
-.card-hover{transition:transform .2s ease,box-shadow .2s ease}
-.card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,201,177,0.15)}
-
+/* ── Backgrounds ─────────────────────────────────────── */
 .bg-mesh{
   position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
@@ -67,87 +66,221 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif}
 }
 .orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none}
 
-.inp{
-  width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.12);border-radius:10px;
-  color:white;font-size:14px;transition:border-color .2s,background .2s;
+/* ── Glass ───────────────────────────────────────────── */
+.glass{
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:16px;
 }
-.inp:focus{border-color:var(--teal);background:rgba(0,201,177,0.06)}
-.inp::placeholder{color:rgba(255,255,255,0.3)}
-.inp-label{font-size:12px;font-weight:500;color:rgba(255,255,255,0.6);margin-bottom:6px;display:block;letter-spacing:.4px;text-transform:uppercase}
+.card-hover{transition:transform .2s ease,box-shadow .2s ease}
+.card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,201,177,0.15)}
 
+/* ── Form inputs ─────────────────────────────────────── */
+.inp{
+  width:100%;
+  padding:12px 16px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;
+  color:#ffffff;
+  font-size:14px;
+  transition:border-color .2s,background .2s;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.inp:focus{
+  border-color:var(--teal);
+  background:rgba(0,201,177,0.06);
+}
+.inp::placeholder{color:rgba(255,255,255,0.35)}
+
+/* ── FIX: dropdown options visible on all browsers ───── */
+.inp option{
+  background:#0D1230;
+  color:#ffffff;
+  padding:8px 12px;
+}
+/* Force dark background on select itself on Windows/Chrome */
+select.inp{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300C9B1' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:40px;
+  cursor:pointer;
+}
+select.inp:focus{border-color:var(--teal)}
+
+.inp-label{
+  font-size:11px;
+  font-weight:600;
+  color:rgba(255,255,255,0.55);
+  margin-bottom:6px;
+  display:block;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
 .btn-primary{
   background:linear-gradient(135deg,var(--teal),var(--teal2));
-  color:var(--navy);font-weight:700;padding:13px 28px;border-radius:10px;
-  border:none;font-size:15px;transition:all .2s;letter-spacing:.2px;
-  box-shadow:0 4px 20px rgba(0,201,177,0.3);cursor:pointer;
+  color:var(--navy);
+  font-weight:700;
+  padding:13px 28px;
+  border-radius:10px;
+  border:none;
+  font-size:15px;
+  transition:all .2s;
+  letter-spacing:.2px;
+  box-shadow:0 4px 20px rgba(0,201,177,0.3);
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
 }
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,201,177,0.4)}
 .btn-primary:active{transform:translateY(0)}
-.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
 
 .btn-secondary{
-  background:rgba(255,255,255,0.08);color:white;font-weight:600;
-  padding:12px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);
-  font-size:14px;transition:all .2s;cursor:pointer;
+  background:rgba(255,255,255,0.07);
+  color:white;
+  font-weight:600;
+  padding:12px 24px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.15);
+  font-size:14px;
+  transition:all .2s;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
-.btn-secondary:hover{background:rgba(255,255,255,0.13);border-color:rgba(255,255,255,0.25)}
+.btn-secondary:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.25)}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
 
+/* ── Chips ───────────────────────────────────────────── */
 .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
 .chip-teal{background:rgba(0,201,177,0.15);color:var(--teal);border:1px solid rgba(0,201,177,0.25)}
 .chip-success{background:rgba(34,197,94,0.15);color:#22C55E;border:1px solid rgba(34,197,94,0.25)}
 .chip-danger{background:rgba(239,68,68,0.15);color:#EF4444;border:1px solid rgba(239,68,68,0.25)}
 
-.sidebar{width:260px;flex-shrink:0;background:rgba(13,18,48,0.6);backdrop-filter:blur(20px);border-right:1px solid rgba(255,255,255,0.06)}
-.sidebar-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:14px;font-weight:500;color:rgba(255,255,255,0.55)}
-.sidebar-item:hover{background:rgba(255,255,255,0.07);color:white}
-.sidebar-item.active{background:rgba(0,201,177,0.15);color:var(--teal);border:1px solid rgba(0,201,177,0.2)}
-
-.drop-zone{
-  border:2px dashed rgba(255,255,255,0.15);border-radius:12px;padding:24px;
-  text-align:center;cursor:pointer;transition:all .2s;
-  background:rgba(255,255,255,0.03);
-}
-.drop-zone:hover,.drop-zone.drag-over{
-  border-color:var(--teal);background:rgba(0,201,177,0.05);
-}
-.drop-zone.uploaded{border-color:var(--success);border-style:solid;background:rgba(34,197,94,0.06)}
-
+/* ── Progress bar ────────────────────────────────────── */
 .prog-bar{height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
 .prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),#00E5CC);transition:width .8s cubic-bezier(.4,0,.2,1)}
 
+/* ── Step dots ───────────────────────────────────────── */
 .step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all .3s;flex-shrink:0}
 .step-dot.done{background:var(--teal);color:var(--navy)}
 .step-dot.active{background:rgba(0,201,177,0.2);color:var(--teal);border:2px solid var(--teal)}
 .step-dot.pending{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);border:2px solid rgba(255,255,255,0.1)}
-.step-line{flex:1;height:2px;background:rgba(255,255,255,0.1);transition:background .3s}
+.step-line{flex:1;height:2px;background:rgba(255,255,255,0.1);transition:background .3s;min-width:8px}
 .step-line.done{background:var(--teal)}
 
+/* ── Success ring ────────────────────────────────────── */
 .success-ring{
-  width:100px;height:100px;border-radius:50%;background:rgba(34,197,94,0.15);
+  width:100px;height:100px;border-radius:50%;
+  background:rgba(34,197,94,0.15);
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 0 0 16px rgba(34,197,94,0.08),0 0 0 32px rgba(34,197,94,0.04);
   animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;
+  margin:0 auto;
 }
 
-.rec-card{
-  display:flex;align-items:flex-start;gap:14px;padding:16px;
-  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-  border-radius:12px;transition:all .2s;
+/* ── Drop zone ───────────────────────────────────────── */
+.drop-zone{
+  border:2px dashed rgba(255,255,255,0.15);
+  border-radius:12px;padding:20px;
+  text-align:center;cursor:pointer;transition:all .2s;
+  background:rgba(255,255,255,0.03);
 }
-.rec-card:hover{background:rgba(255,255,255,0.07);border-color:rgba(0,201,177,0.2)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--teal);background:rgba(0,201,177,0.05)}
+.drop-zone.uploaded{border-color:var(--success);border-style:solid;background:rgba(34,197,94,0.06)}
 
+/* ── Modal ───────────────────────────────────────────── */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
   z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
   animation:fadeIn .2s ease;
 }
-.modal-box{animation:scaleIn .25s ease}
 
-.error-msg{color:#EF4444;font-size:12px;margin-top:4px}
-.success-msg{color:#22C55E;font-size:12px;margin-top:4px}
+/* ── Messages ────────────────────────────────────────── */
+.error-msg{color:#EF4444;font-size:12px;margin-top:5px;display:flex;align-items:center;gap:4px}
+.success-msg{color:#22C55E;font-size:12px;margin-top:5px}
+.info-notice{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 14px;
+  background:rgba(0,201,177,0.06);
+  border-radius:10px;
+  border:1px solid rgba(0,201,177,0.15);
+}
+.info-notice p{font-size:11px;color:rgba(255,255,255,0.6);line-height:1.6}
 
+/* ── Page wrapper ────────────────────────────────────── */
+.page{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  padding:32px 20px;
+  position:relative;
+}
+.page-inner{
+  max-width:680px;
+  margin:0 auto;
+  width:100%;
+  position:relative;
+  z-index:1;
+}
+
+/* ── Card grid ───────────────────────────────────────── */
+.info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
 @media(max-width:768px){
-  .sidebar{display:none}
-  .hide-mobile{display:none}
+  .hide-mobile{display:none !important}
+  .hide-desktop{display:block !important}
+
+  .page{padding:20px 16px}
+
+  /* Login page — full width form on mobile */
+  .login-wrapper{
+    flex-direction:column !important;
+    min-height:100vh;
+  }
+  .login-form-panel{
+    width:100% !important;
+    max-width:100% !important;
+    padding:24px 20px !important;
+  }
+
+  /* Profile step dots — smaller on mobile */
+  .step-dot{width:26px;height:26px;font-size:11px}
+
+  /* Review grid — single column on mobile */
+  .info-grid{grid-template-columns:1fr !important}
+
+  /* Buttons full width on mobile */
+  .btn-row{flex-direction:column !important}
+  .btn-row button{width:100% !important}
+
+  /* Drop zone smaller padding */
+  .drop-zone{padding:14px}
+
+  /* Glass cards */
+  .glass{border-radius:12px}
+}
+
+@media(min-width:769px){
+  .hide-desktop{display:none !important}
+}
+
+@media(max-width:480px){
+  .page{padding:16px 12px}
+  .btn-primary,.btn-secondary{padding:12px 20px;font-size:14px}
 }
