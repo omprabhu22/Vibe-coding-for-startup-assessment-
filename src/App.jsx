@@ -215,10 +215,8 @@ function LoginPage({ onLogin }) {
 }
 
 // ─── PROFILE SETUP PAGE ───────────────────────────────────────
-function ProfilePage({ user, token, savedProfile, onComplete, onBack }) {
-  const [step, setStep] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [data, setData] = useState({
+function profileToForm(savedProfile, user) {
+  return {
     fullName: savedProfile?.full_name || user?.name || '',
     age: savedProfile?.age ? String(savedProfile.age) : '',
     occupation: savedProfile?.occupation || '',
@@ -229,7 +227,18 @@ function ProfilePage({ user, token, savedProfile, onComplete, onBack }) {
     suburb: savedProfile?.suburb || '',
     phone: savedProfile?.phone || '',
     bio: savedProfile?.bio || '',
-  })
+  }
+}
+
+function ProfilePage({ user, token, savedProfile, onComplete, onBack }) {
+  const [step, setStep] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [data, setData] = useState(() => profileToForm(savedProfile, user))
+
+  // Sync form whenever savedProfile arrives or changes (e.g. after first submit)
+  useEffect(() => {
+    if (savedProfile) setData(profileToForm(savedProfile, user))
+  }, [savedProfile])
   const [errors, setErrors] = useState({})
 
   const steps = [
