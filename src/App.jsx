@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { api } from './api'
 
 // ─── ICONS ────────────────────────────────────────────────────
 const Icons = {
@@ -31,11 +32,20 @@ function LoginPage({ onLogin }) {
     return e
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin({ name: name || 'Alex Johnson', email }) }, 1500)
+    try {
+      const data = mode === 'login'
+        ? await api.login(email, password)
+        : await api.signup(email, password, name)
+      onLogin({ name: data.user.name || name || email, email: data.user.email, id: data.user.id }, data.access_token)
+    } catch (err) {
+      setErrors({ submit: err.message })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -96,6 +106,7 @@ function LoginPage({ onLogin }) {
               {errors.password && <div className="error-msg">{errors.password}</div>}
             </div>
 
+            {errors.submit && <div className="error-msg" style={{ marginBottom: 12 }}>{errors.submit}</div>}
             <button className="btn-primary" style={{ width: '100%', marginBottom: 16 }} onClick={handleSubmit} disabled={loading}>
               {loading ? <Icons.Loader /> : mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
@@ -121,7 +132,7 @@ function LoginPage({ onLogin }) {
 }
 
 // ─── PROFILE SETUP PAGE ───────────────────────────────────────
-function ProfilePage({ user, onComplete }) {
+function ProfilePage({ user, token, onComplete }) {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [data, setData] = useState({
@@ -151,13 +162,31 @@ function ProfilePage({ user, onComplete }) {
     return e
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     if (step < steps.length - 1) setStep(s => s + 1)
     else {
       setSaving(true)
-      setTimeout(() => { setSaving(false); onComplete(data) }, 1400)
+      try {
+        await api.saveProfile({
+          full_name: data.fullName,
+          phone: data.phone,
+          age: data.age ? parseInt(data.age) : null,
+          bio: data.bio || null,
+          occupation: data.occupation || null,
+          employment_status: data.employmentStatus || null,
+          weekly_income: data.weeklyIncome ? parseFloat(data.weeklyIncome) : null,
+          visa_status: data.visaStatus || null,
+          rental_budget: data.rentalBudget ? parseFloat(data.rentalBudget) : null,
+          suburb: data.suburb || null,
+        }, token)
+        onComplete(data)
+      } catch (err) {
+        setErrors({ submit: err.message })
+      } finally {
+        setSaving(false)
+      }
     }
   }
 
@@ -271,6 +300,7 @@ function ProfilePage({ user, onComplete }) {
           </p>
         </div>
 
+        {errors.submit && <div className="error-msg" style={{ marginBottom: 12 }}>{errors.submit}</div>}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between' }}>
           <button className="btn-secondary" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0} style={{ flex: 1 }}>Back</button>
           <button className="btn-primary" onClick={handleNext} disabled={saving} style={{ flex: 1 }}>
@@ -406,12 +436,32 @@ function DocumentsPage({ onComplete }) {
 }
 
 // ─── REVIEW PAGE ──────────────────────────────────────────────
-function ReviewPage({ user, profileData, onSubmit }) {
+function ReviewPage({ user, profileData, token, onSubmit }) {
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
 
-  const doSubmit = () => {
+  const doSubmit = async () => {
     setSubmitting(true)
-    setTimeout(() => { setSubmitting(false); onSubmit() }, 1500)
+    setError(null)
+    try {
+      await api.submitApplication({
+        full_name: profileData?.fullName || user?.name,
+        email: user?.email,
+        phone: profileData?.phone,
+        age: profileData?.age ? parseInt(profileData.age) : null,
+        occupation: profileData?.occupation || null,
+        employment_status: profileData?.employmentStatus || null,
+        weekly_income: profileData?.weeklyIncome ? parseFloat(profileData.weeklyIncome) : null,
+        visa_status: profileData?.visaStatus || null,
+        rental_budget: profileData?.rentalBudget ? parseFloat(profileData.rentalBudget) : null,
+        suburb: profileData?.suburb || null,
+      }, token)
+      onSubmit()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -474,6 +524,7 @@ function ReviewPage({ user, profileData, onSubmit }) {
           </p>
         </div>
 
+        {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
         <button className="btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={doSubmit} disabled={submitting}>
           {submitting ? <Icons.Loader /> : 'Submit Application'}
         </button>
@@ -544,17 +595,18 @@ function SuccessPage() {
 export default function App() {
   const [phase, setPhase] = useState('login')
   const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
   const [profileData, setProfileData] = useState(null)
 
-  const handleLogin = (u) => { setUser(u); setPhase('profile') }
+  const handleLogin = (u, t) => { setUser(u); setToken(t); setPhase('profile') }
   const handleProfileDone = (data) => { setProfileData(data); setPhase('documents') }
   const handleDocsDone = () => { setPhase('review') }
   const handleSubmit = () => { setPhase('success') }
 
   if (phase === 'login') return <LoginPage onLogin={handleLogin} />
-  if (phase === 'profile') return <ProfilePage user={user} onComplete={handleProfileDone} />
+  if (phase === 'profile') return <ProfilePage user={user} token={token} onComplete={handleProfileDone} />
   if (phase === 'documents') return <DocumentsPage onComplete={handleDocsDone} />
-  if (phase === 'review') return <ReviewPage user={user} profileData={profileData} onSubmit={handleSubmit} />
+  if (phase === 'review') return <ReviewPage user={user} profileData={profileData} token={token} onSubmit={handleSubmit} />
   if (phase === 'success') return <SuccessPage />
 
   return null
